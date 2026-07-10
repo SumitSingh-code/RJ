@@ -686,7 +686,12 @@ function drawStableGraph(state) {
     ctx.shadowBlur = 0;
   });
 
-  // Draw nodes
+  // Draw nodes — render circles, then initials inside, then name labels to the side.
+  // Previous approach placed labels below circles, but with 10 nodes and ~38px spacing,
+  // the label at (y + radius + 16) consistently overlapped with the next circle.
+  // New approach: draw names to the LEFT of left-column nodes and RIGHT of right-column nodes.
+
+  // Pass 1: Draw all node circles
   profiles.forEach(p => {
     const pos = nodePositions.get(p.id);
     if (!pos) return;
@@ -695,7 +700,6 @@ function drawStableGraph(state) {
     const isPartner = p.id === stablePartner;
     const isHighlight = isSelected || isPartner;
 
-    // Node circle
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, nodeRadius, 0, Math.PI * 2);
 
@@ -715,13 +719,34 @@ function drawStableGraph(state) {
     ctx.fill();
     ctx.stroke();
     ctx.shadowBlur = 0;
+  });
 
-    // Node label
+  // Pass 2: Draw all node labels — positioned to the SIDE of each node
+  // Left-column nodes: label to the left of the circle
+  // Right-column nodes: label to the right of the circle
+  // This completely avoids any vertical overlap between labels and circles.
+  profiles.forEach(p => {
+    const pos = nodePositions.get(p.id);
+    if (!pos) return;
+
+    const isSelected = p.id === selectedId;
+    const isPartner = p.id === stablePartner;
+    const isHighlight = isSelected || isPartner;
+
     const firstName = (p.name || p.id).split(' ')[0];
-    ctx.font = `${isHighlight ? '600' : '400'} ${Math.min(11, nodeRadius * 0.8)}px Inter, sans-serif`;
-    ctx.textAlign = 'center';
+    const fontSize = Math.max(9, Math.min(11, nodeRadius * 0.7));
+    ctx.font = `${isHighlight ? '600' : '400'} ${fontSize}px Inter, sans-serif`;
     ctx.fillStyle = isHighlight ? '#d4af37' : '#e8e2d8';
-    ctx.fillText(firstName, pos.x, pos.y + nodeRadius + 16);
+
+    if (pos.side === 'left') {
+      // Label to the left of the node
+      ctx.textAlign = 'right';
+      ctx.fillText(firstName, pos.x - nodeRadius - 8, pos.y + 4);
+    } else {
+      // Label to the right of the node
+      ctx.textAlign = 'left';
+      ctx.fillText(firstName, pos.x + nodeRadius + 8, pos.y + 4);
+    }
   });
 }
 
