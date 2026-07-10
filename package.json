@@ -1,0 +1,10 @@
+{
+  "name": "romeo-matchmaking",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Algorithm-First Matchmaking Engine with directional scoring, Gale-Shapley stable matching, and Monte Carlo confidence analysis",
+  "scripts": {
+    "dev": "npx -y serve .",
+    "start": "npx -y serve ."
+  }
+}
