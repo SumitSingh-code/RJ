@@ -11,9 +11,10 @@ import { getVerdict, simulateConversation, PROVIDERS } from './llm.js';
 import { renderApp } from './ui.js';
 
 // --------------- localStorage Keys ---------------
-const LS_CLAUDE_KEY = 'romeo_claude_api_key';
-const LS_GEMINI_KEY = 'romeo_gemini_api_key';
-const LS_PROVIDER   = 'romeo_active_provider';
+const LS_CLAUDE_KEY     = 'romeo_claude_api_key';
+const LS_GEMINI_KEY     = 'romeo_gemini_api_key';
+const LS_OPENROUTER_KEY = 'romeo_openrouter_api_key';
+const LS_PROVIDER       = 'romeo_active_provider';
 
 // --------------- Application State ---------------
 const state = {
@@ -29,18 +30,22 @@ const state = {
   showGraph: false,
   expandedCardId: null,
 
-  // Provider + keys (new)
-  activeProvider: localStorage.getItem(LS_PROVIDER) || 'claude',  // 'claude' | 'gemini'
+  // Provider + keys
+  activeProvider: localStorage.getItem(LS_PROVIDER) || 'claude',  // 'claude' | 'gemini' | 'openrouter'
   claudeApiKey: localStorage.getItem(LS_CLAUDE_KEY) || '',
   geminiApiKey: localStorage.getItem(LS_GEMINI_KEY) || '',
+  openrouterApiKey: localStorage.getItem(LS_OPENROUTER_KEY) || '',
 
-  // Toast notifications (new)
+  // Toast notifications
   toast: null  // { message, type: 'error'|'warning'|'info', timestamp }
 };
 
 /** Get the API key for the currently active provider */
 function getActiveApiKey() {
-  return state.activeProvider === 'claude' ? state.claudeApiKey : state.geminiApiKey;
+  if (state.activeProvider === 'claude') return state.claudeApiKey;
+  if (state.activeProvider === 'gemini') return state.geminiApiKey;
+  if (state.activeProvider === 'openrouter') return state.openrouterApiKey;
+  return '';
 }
 
 /** Get the display name for the currently active provider */
@@ -229,7 +234,7 @@ async function fetchChemistry(targetId, candidateId) {
 // --------------- Provider & Key Management ---------------
 
 function setActiveProvider(provider) {
-  if (provider !== 'claude' && provider !== 'gemini') return;
+  if (!['claude', 'gemini', 'openrouter'].includes(provider)) return;
   state.activeProvider = provider;
   localStorage.setItem(LS_PROVIDER, provider);
 
@@ -248,21 +253,19 @@ function setActiveProvider(provider) {
 function setClaudeApiKey(key) {
   state.claudeApiKey = key;
   localStorage.setItem(LS_CLAUDE_KEY, key);
-
-  // Auto-dismiss missing-key toast when a key is entered for the active provider
-  if (state.activeProvider === 'claude' && key && state.toast) {
-    state.toast = null;
-  }
+  if (state.activeProvider === 'claude' && key && state.toast) state.toast = null;
 }
 
 function setGeminiApiKey(key) {
   state.geminiApiKey = key;
   localStorage.setItem(LS_GEMINI_KEY, key);
+  if (state.activeProvider === 'gemini' && key && state.toast) state.toast = null;
+}
 
-  // Auto-dismiss missing-key toast when a key is entered for the active provider
-  if (state.activeProvider === 'gemini' && key && state.toast) {
-    state.toast = null;
-  }
+function setOpenrouterApiKey(key) {
+  state.openrouterApiKey = key;
+  localStorage.setItem(LS_OPENROUTER_KEY, key);
+  if (state.activeProvider === 'openrouter' && key && state.toast) state.toast = null;
 }
 
 // --------------- Global API for UI Event Binding ---------------
@@ -280,6 +283,7 @@ window.Romeo = {
   setActiveProvider,
   setClaudeApiKey,
   setGeminiApiKey,
+  setOpenrouterApiKey,
 
   expandCard: (id) => {
     state.expandedCardId = state.expandedCardId === id ? null : id;

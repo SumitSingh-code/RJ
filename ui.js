@@ -36,12 +36,29 @@ function renderHeader() {
 
 // --------------- Render: Controls ---------------
 
+/** Helper: get active API key for the current provider */
+function getActiveKey(state) {
+  if (state.activeProvider === 'claude') return state.claudeApiKey || '';
+  if (state.activeProvider === 'gemini') return state.geminiApiKey || '';
+  if (state.activeProvider === 'openrouter') return state.openrouterApiKey || '';
+  return '';
+}
+
+/** Helper: get display name for the current provider */
+function getProviderName(state) {
+  if (state.activeProvider === 'claude') return 'Claude';
+  if (state.activeProvider === 'gemini') return 'Gemini';
+  if (state.activeProvider === 'openrouter') return 'OpenRouter';
+  return state.activeProvider;
+}
+
 function renderControls(state) {
   const profiles = state.profiles || [];
   const selectedId = state.selectedProfileId || '';
   const activeProvider = state.activeProvider || 'claude';
   const claudeKey = state.claudeApiKey || '';
   const geminiKey = state.geminiApiKey || '';
+  const openrouterKey = state.openrouterApiKey || '';
 
   const options = profiles.map(p =>
     `<option value="${esc(p.id)}" ${p.id === selectedId ? 'selected' : ''}>${esc(p.name)} (${esc(p.age)}, ${esc(p.city)})</option>`
@@ -50,6 +67,7 @@ function renderControls(state) {
   // Ready indicators
   const claudeReady = claudeKey.trim().length > 0;
   const geminiReady = geminiKey.trim().length > 0;
+  const openrouterReady = openrouterKey.trim().length > 0;
 
   return `
     <nav class="controls-bar" aria-label="Controls">
@@ -64,7 +82,7 @@ function renderControls(state) {
       </select>
 
       <div class="provider-controls">
-        <!-- Segmented provider toggle -->
+        <!-- Segmented provider toggle (3 buttons) -->
         <div class="provider-toggle" role="radiogroup" aria-label="LLM Provider">
           <button
             id="provider-toggle-claude"
@@ -80,9 +98,16 @@ function renderControls(state) {
             role="radio"
             aria-checked="${activeProvider === 'gemini'}"
           >Gemini</button>
+          <button
+            id="provider-toggle-openrouter"
+            class="provider-toggle-btn ${activeProvider === 'openrouter' ? 'active' : ''}"
+            onclick="window.Romeo.setActiveProvider('openrouter')"
+            role="radio"
+            aria-checked="${activeProvider === 'openrouter'}"
+          >OpenRouter</button>
         </div>
 
-        <!-- Dual API key inputs -->
+        <!-- Triple API key inputs -->
         <div class="api-keys-row">
           <div class="api-key-wrapper">
             <input
@@ -108,6 +133,19 @@ function renderControls(state) {
               aria-label="Gemini API key"
             />
             <span class="key-ready-dot ${geminiReady ? 'ready' : ''}" title="${geminiReady ? 'Key entered' : 'No key'}"></span>
+            <button class="key-toggle-vis" onclick="this.parentElement.querySelector('input').type = this.parentElement.querySelector('input').type === 'password' ? 'text' : 'password'" aria-label="Toggle key visibility" title="Show/hide key">👁</button>
+          </div>
+          <div class="api-key-wrapper">
+            <input
+              id="api-key-openrouter"
+              class="api-key-input ${activeProvider === 'openrouter' ? 'active-provider-input' : ''}"
+              type="password"
+              placeholder="OpenRouter API key"
+              value="${esc(openrouterKey)}"
+              oninput="window.Romeo.setOpenrouterApiKey(this.value)"
+              aria-label="OpenRouter API key"
+            />
+            <span class="key-ready-dot ${openrouterReady ? 'ready' : ''}" title="${openrouterReady ? 'Key entered' : 'No key'}"></span>
             <button class="key-toggle-vis" onclick="this.parentElement.querySelector('input').type = this.parentElement.querySelector('input').type === 'password' ? 'text' : 'password'" aria-label="Toggle key visibility" title="Show/hide key">👁</button>
           </div>
         </div>
@@ -259,8 +297,8 @@ function renderLoading(message) {
 
 function renderVerdict(state) {
   const { verdict, verdictLoading } = state;
-  const activeKey = state.activeProvider === 'claude' ? state.claudeApiKey : state.geminiApiKey;
-  const providerName = state.activeProvider === 'claude' ? 'Claude' : 'Gemini';
+  const activeKey = getActiveKey(state);
+  const providerName = getProviderName(state);
 
   let content = '';
 
@@ -294,8 +332,8 @@ function renderVerdict(state) {
 
 function renderChemistry(state, targetId, candidateId) {
   const { chemistry, chemistryLoading } = state;
-  const activeKey = state.activeProvider === 'claude' ? state.claudeApiKey : state.geminiApiKey;
-  const providerName = state.activeProvider === 'claude' ? 'Claude' : 'Gemini';
+  const activeKey = getActiveKey(state);
+  const providerName = getProviderName(state);
 
   let buttonHtml = '';
   if (!chemistry && !chemistryLoading) {
@@ -786,7 +824,7 @@ export function renderApp(state) {
   const app = document.getElementById('app');
   if (!app) return;
 
-  // Preserve input values before clearing (both key fields)
+  // Preserve input values before clearing (all 3 key fields)
   const currentClaudeKey = document.getElementById('api-key-claude')?.value;
   if (currentClaudeKey !== undefined && currentClaudeKey !== '') {
     state.claudeApiKey = currentClaudeKey;
@@ -794,6 +832,10 @@ export function renderApp(state) {
   const currentGeminiKey = document.getElementById('api-key-gemini')?.value;
   if (currentGeminiKey !== undefined && currentGeminiKey !== '') {
     state.geminiApiKey = currentGeminiKey;
+  }
+  const currentOpenrouterKey = document.getElementById('api-key-openrouter')?.value;
+  if (currentOpenrouterKey !== undefined && currentOpenrouterKey !== '') {
+    state.openrouterApiKey = currentOpenrouterKey;
   }
 
   // Build full HTML

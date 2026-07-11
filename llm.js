@@ -1,6 +1,6 @@
 /**
  * llm.js — Provider-agnostic LLM integration for Romeo matchmaking engine.
- * Supports Claude (Anthropic) and Gemini (Google) via a unified callLLM() interface.
+ * Supports Claude (Anthropic), Gemini (Google), and OpenRouter via a unified callLLM() interface.
  * Both getVerdict() and simulateConversation() route through callLLM(), which
  * dispatches to the correct provider adapter based on the active selection.
  */
@@ -100,6 +100,49 @@ export const PROVIDERS = {
         if (parts && parts.length > 0) {
           return parts[0].text;
         }
+      }
+      return null;
+    }
+  },
+
+  openrouter: {
+    id: 'openrouter',
+    displayName: 'OpenRouter',
+    // OpenRouter routes to many models; using a fast, free-tier-friendly default.
+    // Users can change this if they have credits for premium models.
+    model: 'google/gemini-2.0-flash-001',
+    endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+
+    /** Build fetch options for OpenRouter (OpenAI-compatible format) */
+    buildRequest(apiKey, systemPrompt, userPrompt) {
+      return {
+        url: this.endpoint,
+        options: {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'content-type': 'application/json',
+            'HTTP-Referer': window.location.origin || 'https://romeo-matchmaking.vercel.app',
+            'X-Title': 'Romeo Matchmaking Engine'
+          },
+          body: JSON.stringify({
+            model: this.model,
+            max_tokens: 1024,
+            temperature: 0.7,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ]
+          })
+        }
+      };
+    },
+
+    /** Extract text content from OpenRouter's response (OpenAI-compatible format) */
+    extractText(responseData) {
+      // OpenAI format: { choices: [{ message: { content: "..." } }] }
+      if (responseData.choices && responseData.choices.length > 0) {
+        return responseData.choices[0]?.message?.content || null;
       }
       return null;
     }
