@@ -108,9 +108,9 @@ export const PROVIDERS = {
   openrouter: {
     id: 'openrouter',
     displayName: 'OpenRouter',
-    // OpenRouter routes to many models; using the free-tier Gemini Flash model.
-    // Browse https://openrouter.ai/models for alternatives (e.g., meta-llama, mistral).
-    model: 'google/gemini-2.0-flash-exp:free',
+    // OpenRouter model — google/gemini-2.5-flash (fast, cheap).
+    // Browse https://openrouter.ai/models for alternatives.
+    model: 'google/gemini-2.5-flash',
     endpoint: 'https://openrouter.ai/api/v1/chat/completions',
 
     /** Build fetch options for OpenRouter (OpenAI-compatible format) */
